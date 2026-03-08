@@ -3,35 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestion Immobilière Québec - Version Ultime</title>
-<link rel="manifest" href="manifest.json">
+<title>Gestion Immobilière Québec ULTRA PRO</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
-body{font-family:Arial;margin:0;background:#eef2f7}
-header{background:#0d47a1;color:white;padding:18px;font-size:22px;font-weight:bold}
-.container{padding:16px;max-width:900px;margin:auto}
-.card{background:white;padding:18px;border-radius:12px;margin-bottom:14px;box-shadow:0 4px 10px rgba(0,0,0,0.08)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+body{font-family:Arial;margin:0;background:#eef3fb}
+header{background:#0d47a1;color:white;padding:20px;text-align:center;font-size:22px}
+.container{max-width:1000px;margin:auto;padding:15px}
+.card{background:white;padding:18px;border-radius:12px;margin-bottom:15px;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .stat{background:#f3f6fb;padding:12px;border-radius:10px;text-align:center}
 .stat h2{margin:6px 0}
-button{background:#1565c0;color:white;border:none;padding:10px 14px;border-radius:8px;margin-top:8px;cursor:pointer}
-input,select{padding:10px;margin-top:6px;width:100%;border-radius:6px;border:1px solid #ccc}
+input,select{width:100%;padding:10px;margin-top:6px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc}
+button{background:#1565c0;color:white;border:none;padding:10px;border-radius:6px;cursor:pointer}
+button:hover{background:#0d47a1}
 ul{padding-left:18px}
+canvas{max-height:300px}
 </style>
 </head>
 <body>
 
-<header>Gestion Immobilière Québec</header>
+<header>Gestion Immobilière Québec – Ultra Pro</header>
 
 <div class="container">
 
 <div class="card">
 <h3>📊 Tableau de bord</h3>
 <div class="grid">
-<div class="stat"><div>Revenus mensuels</div><h2 id="rev">0$</h2></div>
-<div class="stat"><div>Dépenses</div><h2 id="exp">0$</h2></div>
-<div class="stat"><div>Profit</div><h2 id="profit">0$</h2></div>
-<div class="stat"><div>Locataires</div><h2 id="tenantsCount">0</h2></div>
+<div class="stat">Revenus<h2 id="rev">0$</h2></div>
+<div class="stat">Dépenses<h2 id="exp">0$</h2></div>
+<div class="stat">Profit<h2 id="profit">0$</h2></div>
+<div class="stat">Locataires<h2 id="tenantsCount">0</h2></div>
 </div>
+</div>
+
+<div class="card">
+<h3>📈 Graphique financier</h3>
+<canvas id="financeChart"></canvas>
 </div>
 
 <div class="card">
@@ -43,23 +53,24 @@ ul{padding-left:18px}
 
 <div class="card">
 <h3>👥 Ajouter un locataire</h3>
-<input id="tenantName" placeholder="Nom du locataire">
-<input id="tenantUnit" placeholder="Logement (ex: 3A)">
+<input id="tenantName" placeholder="Nom locataire">
+<input id="tenantUnit" placeholder="Logement">
 <input id="tenantRent" type="number" placeholder="Loyer mensuel">
 <button onclick="addTenant()">Ajouter</button>
 <ul id="tenantList"></ul>
 </div>
 
 <div class="card">
-<h3>💰 Enregistrer un paiement de loyer</h3>
+<h3>💰 Paiement de loyer</h3>
 <select id="tenantSelect"></select>
 <input id="paymentAmount" type="number" placeholder="Montant payé">
 <button onclick="addPayment()">Enregistrer paiement</button>
+<button onclick="generateReceipt()">📄 Générer reçu PDF</button>
 <ul id="paymentList"></ul>
 </div>
 
 <div class="card">
-<h3>🔧 Ajouter une dépense / réparation</h3>
+<h3>🔧 Dépense / réparation</h3>
 <input id="expenseDesc" placeholder="Description">
 <input id="expenseAmount" type="number" placeholder="Montant">
 <button onclick="addExpense()">Ajouter dépense</button>
@@ -81,6 +92,8 @@ localStorage.setItem('payments',JSON.stringify(payments))
 localStorage.setItem('expenses',JSON.stringify(expenses))
 }
 
+let chart
+
 function dashboard(){
 let revenue=payments.reduce((a,b)=>a+Number(b.amount),0)
 let expense=expenses.reduce((a,b)=>a+Number(b.amount),0)
@@ -89,6 +102,14 @@ document.getElementById('rev').textContent=revenue+'$'
 document.getElementById('exp').textContent=expense+'$'
 document.getElementById('profit').textContent=(revenue-expense)+'$'
 document.getElementById('tenantsCount').textContent=tenants.length
+
+updateChart(revenue,expense)
+}
+
+function updateChart(rev,exp){
+let ctx=document.getElementById('financeChart')
+if(chart) chart.destroy()
+chart=new Chart(ctx,{type:'bar',data:{labels:['Revenus','Dépenses','Profit'],datasets:[{data:[rev,exp,rev-exp]}]}})
 }
 
 function render(){
@@ -106,7 +127,7 @@ t.innerHTML=''
 tenants.forEach(i=>{
 let li=document.createElement('li')
 li.textContent=i.name+' - logement '+i.unit+' - '+i.rent+'$'
- t.appendChild(li)
+t.appendChild(li)
 })
 
 let select=document.getElementById('tenantSelect')
@@ -174,9 +195,25 @@ expenses.push({desc,amount})
 render()
 }
 
-render()
+function generateReceipt(){
+let idx=document.getElementById('tenantSelect').value
+let tenant=tenants[idx]
+let amount=document.getElementById('paymentAmount').value
+if(!tenant||!amount)return
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
+const { jsPDF } = window.jspdf
+const doc = new jsPDF()
+
+doc.text('Reçu de loyer',20,20)
+doc.text('Locataire: '+tenant.name,20,40)
+doc.text('Logement: '+tenant.unit,20,50)
+doc.text('Montant payé: '+amount+'$',20,60)
+doc.text('Date: '+new Date().toLocaleDateString(),20,70)
+
+doc.save('recu-loyer.pdf')
+}
+
+render()
 </script>
 
 </body>
