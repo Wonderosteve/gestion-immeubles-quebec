@@ -1,1 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Immobilière Québec - Version Ultime</title>
+<link rel="manifest" href="manifest.json">
+<style>
+body{font-family:Arial;margin:0;background:#eef2f7}
+header{background:#0d47a1;color:white;padding:18px;font-size:22px;font-weight:bold}
+.container{padding:16px;max-width:900px;margin:auto}
+.card{background:white;padding:18px;border-radius:12px;margin-bottom:14px;box-shadow:0 4px 10px rgba(0,0,0,0.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat{background:#f3f6fb;padding:12px;border-radius:10px;text-align:center}
+.stat h2{margin:6px 0}
+button{background:#1565c0;color:white;border:none;padding:10px 14px;border-radius:8px;margin-top:8px;cursor:pointer}
+input,select{padding:10px;margin-top:6px;width:100%;border-radius:6px;border:1px solid #ccc}
+ul{padding-left:18px}
+</style>
+</head>
+<body>
 
+<header>Gestion Immobilière Québec</header>
+
+<div class="container">
+
+<div class="card">
+<h3>📊 Tableau de bord</h3>
+<div class="grid">
+<div class="stat"><div>Revenus mensuels</div><h2 id="rev">0$</h2></div>
+<div class="stat"><div>Dépenses</div><h2 id="exp">0$</h2></div>
+<div class="stat"><div>Profit</div><h2 id="profit">0$</h2></div>
+<div class="stat"><div>Locataires</div><h2 id="tenantsCount">0</h2></div>
+</div>
+</div>
+
+<div class="card">
+<h3>🏢 Ajouter un immeuble</h3>
+<input id="buildingName" placeholder="Adresse ou nom immeuble">
+<button onclick="addBuilding()">Ajouter</button>
+<ul id="buildingList"></ul>
+</div>
+
+<div class="card">
+<h3>👥 Ajouter un locataire</h3>
+<input id="tenantName" placeholder="Nom du locataire">
+<input id="tenantUnit" placeholder="Logement (ex: 3A)">
+<input id="tenantRent" type="number" placeholder="Loyer mensuel">
+<button onclick="addTenant()">Ajouter</button>
+<ul id="tenantList"></ul>
+</div>
+
+<div class="card">
+<h3>💰 Enregistrer un paiement de loyer</h3>
+<select id="tenantSelect"></select>
+<input id="paymentAmount" type="number" placeholder="Montant payé">
+<button onclick="addPayment()">Enregistrer paiement</button>
+<ul id="paymentList"></ul>
+</div>
+
+<div class="card">
+<h3>🔧 Ajouter une dépense / réparation</h3>
+<input id="expenseDesc" placeholder="Description">
+<input id="expenseAmount" type="number" placeholder="Montant">
+<button onclick="addExpense()">Ajouter dépense</button>
+<ul id="expenseList"></ul>
+</div>
+
+</div>
+
+<script>
+let buildings=JSON.parse(localStorage.getItem('buildings')||'[]')
+let tenants=JSON.parse(localStorage.getItem('tenants')||'[]')
+let payments=JSON.parse(localStorage.getItem('payments')||'[]')
+let expenses=JSON.parse(localStorage.getItem('expenses')||'[]')
+
+function save(){
+localStorage.setItem('buildings',JSON.stringify(buildings))
+localStorage.setItem('tenants',JSON.stringify(tenants))
+localStorage.setItem('payments',JSON.stringify(payments))
+localStorage.setItem('expenses',JSON.stringify(expenses))
+}
+
+function dashboard(){
+let revenue=payments.reduce((a,b)=>a+Number(b.amount),0)
+let expense=expenses.reduce((a,b)=>a+Number(b.amount),0)
+
+document.getElementById('rev').textContent=revenue+'$'
+document.getElementById('exp').textContent=expense+'$'
+document.getElementById('profit').textContent=(revenue-expense)+'$'
+document.getElementById('tenantsCount').textContent=tenants.length
+}
+
+function render(){
+
+let b=document.getElementById('buildingList')
+b.innerHTML=''
+buildings.forEach(i=>{
+let li=document.createElement('li')
+li.textContent=i
+b.appendChild(li)
+})
+
+let t=document.getElementById('tenantList')
+t.innerHTML=''
+tenants.forEach(i=>{
+let li=document.createElement('li')
+li.textContent=i.name+' - logement '+i.unit+' - '+i.rent+'$'
+ t.appendChild(li)
+})
+
+let select=document.getElementById('tenantSelect')
+select.innerHTML=''
+tenants.forEach((t,i)=>{
+let o=document.createElement('option')
+o.value=i
+o.textContent=t.name
+select.appendChild(o)
+})
+
+let p=document.getElementById('paymentList')
+p.innerHTML=''
+payments.forEach(pay=>{
+let li=document.createElement('li')
+li.textContent=pay.name+' - '+pay.amount+'$'
+p.appendChild(li)
+})
+
+let e=document.getElementById('expenseList')
+e.innerHTML=''
+expenses.forEach(ex=>{
+let li=document.createElement('li')
+li.textContent=ex.desc+' - '+ex.amount+'$'
+e.appendChild(li)
+})
+
+save()
+dashboard()
+}
+
+function addBuilding(){
+let name=document.getElementById('buildingName').value
+if(!name)return
+buildings.push(name)
+render()
+}
+
+function addTenant(){
+let name=document.getElementById('tenantName').value
+let unit=document.getElementById('tenantUnit').value
+let rent=document.getElementById('tenantRent').value
+if(!name||!rent)return
+
+tenants.push({name,unit,rent})
+render()
+}
+
+function addPayment(){
+let idx=document.getElementById('tenantSelect').value
+let amount=document.getElementById('paymentAmount').value
+if(amount==='')return
+
+let tenant=tenants[idx]
+payments.push({name:tenant.name,amount})
+render()
+}
+
+function addExpense(){
+let desc=document.getElementById('expenseDesc').value
+let amount=document.getElementById('expenseAmount').value
+if(!desc||!amount)return
+
+expenses.push({desc,amount})
+render()
+}
+
+render()
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
+</script>
+
+</body>
+</html>
