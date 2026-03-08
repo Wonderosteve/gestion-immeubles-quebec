@@ -1,157 +1,244 @@
-# Application Gestion Immeubles (Version GitHub Pro)
-
-Application simple pour téléphone pour gérer :
-- immeubles
-- logements
-- locataires
-- loyers
-- réparations
-- historique
-
-Copiez ce fichier dans **index.html** dans votre dépôt GitHub.
-
-```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestion Immeubles</title>
+<title>Gestion Immobilière Pro – Style Proprio Expert</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
-body{font-family:Arial;margin:0;background:#f2f2f2}
-header{background:#1e88e5;color:white;padding:15px;text-align:center}
-nav{display:flex;background:#1565c0}
-nav button{flex:1;padding:12px;border:none;background:#1565c0;color:white;font-size:16px}
-nav button:hover{background:#0d47a1}
-section{display:none;padding:15px}
-section.active{display:block}
-.card{background:white;padding:12px;margin-bottom:10px;border-radius:8px}
-input,button{padding:10px;margin:5px 0;width:100%}
-.list{margin-top:10px}
+body{font-family:Arial;margin:0;background:#eef2f7}
+header{background:#0d47a1;color:white;padding:18px;text-align:center;font-size:22px}
+.container{max-width:1100px;margin:auto;padding:16px}
+.card{background:white;padding:18px;border-radius:12px;margin-bottom:14px;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat{background:#f4f7fc;padding:12px;border-radius:10px;text-align:center}
+.stat h2{margin:6px 0}
+input,select{width:100%;padding:10px;margin-top:6px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc}
+button{background:#1565c0;color:white;border:none;padding:10px;border-radius:6px;cursor:pointer}
+button:hover{background:#0d47a1}
+ul{padding-left:18px}
+.section-title{font-weight:bold;margin-bottom:8px}
 </style>
 </head>
 <body>
 
-<header>
-<h2>Gestion Immeubles</h2>
-</header>
+<header>Gestion Immobilière Pro (type Proprio Expert)</header>
 
-<nav>
-<button onclick="show('dashboard')">Tableau</button>
-<button onclick="show('locataires')">Locataires</button>
-<button onclick="show('loyers')">Loyers</button>
-<button onclick="show('reparations')">Réparations</button>
-</nav>
+<div class="container">
 
-<section id="dashboard" class="active">
 <div class="card">
-<h3>Résumé</h3>
-<p>Revenus: <span id="revenus">0</span>$</p>
-<p>Dépenses: <span id="depenses">0</span>$</p>
-<p>Profit: <span id="profit">0</span>$</p>
+<div class="section-title">📊 Tableau de bord</div>
+<div class="grid">
+<div class="stat">Revenus<h2 id="rev">0$</h2></div>
+<div class="stat">Dépenses<h2 id="exp">0$</h2></div>
+<div class="stat">Profit<h2 id="profit">0$</h2></div>
+<div class="stat">Logements<h2 id="units">0</h2></div>
 </div>
-</section>
+</div>
 
-<section id="locataires">
-<h3>Ajouter locataire</h3>
-<input id="nomLocataire" placeholder="Nom locataire">
-<input id="logement" placeholder="Logement">
-<button onclick="addLocataire()">Ajouter</button>
+<div class="card">
+<div class="section-title">📈 Performance financière</div>
+<canvas id="financeChart"></canvas>
+</div>
 
-<div class="list" id="listeLocataires"></div>
-</section>
+<div class="card">
+<div class="section-title">🏢 Immeubles</div>
+<input id="buildingName" placeholder="Adresse immeuble">
+<button onclick="addBuilding()">Ajouter immeuble</button>
+<ul id="buildingList"></ul>
+</div>
 
-<section id="loyers">
-<h3>Paiement de loyer</h3>
-<input id="locataireLoyer" placeholder="Nom locataire">
-<input id="montantLoyer" type="number" placeholder="Montant">
-<button onclick="addLoyer()">Ajouter paiement</button>
+<div class="card">
+<div class="section-title">🏠 Logements</div>
+<input id="unitBuilding" placeholder="Immeuble">
+<input id="unitName" placeholder="Logement (ex: 3A)">
+<button onclick="addUnit()">Ajouter logement</button>
+<ul id="unitList"></ul>
+</div>
 
-<div class="list" id="listeLoyers"></div>
-</section>
+<div class="card">
+<div class="section-title">👥 Locataires</div>
+<input id="tenantName" placeholder="Nom locataire">
+<input id="tenantPhone" placeholder="Téléphone">
+<input id="tenantUnit" placeholder="Logement">
+<input id="tenantRent" type="number" placeholder="Loyer mensuel">
+<button onclick="addTenant()">Ajouter locataire</button>
+<ul id="tenantList"></ul>
+</div>
 
-<section id="reparations">
-<h3>Nouvelle réparation</h3>
-<input id="descRep" placeholder="Description">
-<input id="coutRep" type="number" placeholder="Coût">
-<button onclick="addRep()">Ajouter réparation</button>
+<div class="card">
+<div class="section-title">💰 Paiements</div>
+<select id="tenantSelect"></select>
+<input id="paymentAmount" type="number" placeholder="Montant">
+<button onclick="addPayment()">Enregistrer paiement</button>
+<button onclick="generateReceipt()">📄 Reçu PDF</button>
+<ul id="paymentList"></ul>
+</div>
 
-<div class="list" id="listeReps"></div>
-</section>
+<div class="card">
+<div class="section-title">🔧 Dépenses</div>
+<input id="expenseDesc" placeholder="Description">
+<input id="expenseAmount" type="number" placeholder="Montant">
+<button onclick="addExpense()">Ajouter dépense</button>
+<ul id="expenseList"></ul>
+</div>
+
+</div>
 
 <script>
-function show(id){
- document.querySelectorAll('section').forEach(s=>s.classList.remove('active'))
- document.getElementById(id).classList.add('active')
-}
-
-let locataires=JSON.parse(localStorage.getItem('locataires'))||[]
-let loyers=JSON.parse(localStorage.getItem('loyers'))||[]
-let reparations=JSON.parse(localStorage.getItem('reparations'))||[]
+let buildings=JSON.parse(localStorage.getItem('buildings')||'[]')
+let units=JSON.parse(localStorage.getItem('units')||'[]')
+let tenants=JSON.parse(localStorage.getItem('tenants')||'[]')
+let payments=JSON.parse(localStorage.getItem('payments')||'[]')
+let expenses=JSON.parse(localStorage.getItem('expenses')||'[]')
 
 function save(){
- localStorage.setItem('locataires',JSON.stringify(locataires))
- localStorage.setItem('loyers',JSON.stringify(loyers))
- localStorage.setItem('reparations',JSON.stringify(reparations))
- render()
+localStorage.setItem('buildings',JSON.stringify(buildings))
+localStorage.setItem('units',JSON.stringify(units))
+localStorage.setItem('tenants',JSON.stringify(tenants))
+localStorage.setItem('payments',JSON.stringify(payments))
+localStorage.setItem('expenses',JSON.stringify(expenses))
 }
 
-function addLocataire(){
- let nom=document.getElementById('nomLocataire').value
- let log=document.getElementById('logement').value
- if(!nom) return
- locataires.push({nom,log})
- save()
+let chart
+
+function dashboard(){
+let revenue=payments.reduce((a,b)=>a+Number(b.amount),0)
+let expense=expenses.reduce((a,b)=>a+Number(b.amount),0)
+
+document.getElementById('rev').textContent=revenue+'$'
+document.getElementById('exp').textContent=expense+'$'
+document.getElementById('profit').textContent=(revenue-expense)+'$'
+document.getElementById('units').textContent=units.length
+
+updateChart(revenue,expense)
 }
 
-function addLoyer(){
- let nom=document.getElementById('locataireLoyer').value
- let montant=Number(document.getElementById('montantLoyer').value)
- if(!montant) return
- loyers.push({nom,montant,date:new Date().toLocaleDateString()})
- save()
-}
-
-function addRep(){
- let desc=document.getElementById('descRep').value
- let cout=Number(document.getElementById('coutRep').value)
- if(!cout) return
- reparations.push({desc,cout,date:new Date().toLocaleDateString()})
- save()
+function updateChart(rev,exp){
+let ctx=document.getElementById('financeChart')
+if(chart) chart.destroy()
+chart=new Chart(ctx,{type:'bar',data:{labels:['Revenus','Dépenses','Profit'],datasets:[{data:[rev,exp,rev-exp]}]}})
 }
 
 function render(){
 
-let locHTML=""
-locataires.forEach(l=>{
-locHTML+=`<div class='card'>${l.nom} - ${l.log}</div>`
+let b=document.getElementById('buildingList')
+b.innerHTML=''
+buildings.forEach(i=>{
+let li=document.createElement('li')
+li.textContent=i
+b.appendChild(li)
 })
-document.getElementById('listeLocataires').innerHTML=locHTML
 
-let loyHTML=""
-let revenus=0
-loyers.forEach(l=>{
-revenus+=l.montant
-loyHTML+=`<div class='card'>${l.nom} - ${l.montant}$ (${l.date})</div>`
+let u=document.getElementById('unitList')
+u.innerHTML=''
+units.forEach(i=>{
+let li=document.createElement('li')
+li.textContent=i.building+' - '+i.name
+u.appendChild(li)
 })
-document.getElementById('listeLoyers').innerHTML=loyHTML
 
-let repHTML=""
-let depenses=0
-reparations.forEach(r=>{
-depenses+=r.cout
-repHTML+=`<div class='card'>${r.desc} - ${r.cout}$ (${r.date})</div>`
+let t=document.getElementById('tenantList')
+t.innerHTML=''
+tenants.forEach(i=>{
+let li=document.createElement('li')
+li.textContent=i.name+' ('+i.unit+') - '+i.rent+'$'
+t.appendChild(li)
 })
-document.getElementById('listeReps').innerHTML=repHTML
 
-let profit=revenus-depenses
+let select=document.getElementById('tenantSelect')
+select.innerHTML=''
+tenants.forEach((t,i)=>{
+let o=document.createElement('option')
+o.value=i
+o.textContent=t.name
+select.appendChild(o)
+})
 
-document.getElementById('revenus').innerText=revenus
+let p=document.getElementById('paymentList')
+p.innerHTML=''
+payments.forEach(pay=>{
+let li=document.createElement('li')
+li.textContent=pay.name+' - '+pay.amount+'$'
+p.appendChild(li)
+})
 
-document.getElementById('depenses').innerText=depenses
+let e=document.getElementById('expenseList')
+e.innerHTML=''
+expenses.forEach(ex=>{
+let li=document.createElement('li')
+li.textContent=ex.desc+' - '+ex.amount+'$'
+e.appendChild(li)
+})
 
-document.getElementById('profit').innerText=profit
+save()
+dashboard()
+}
 
+function addBuilding(){
+let name=document.getElementById('buildingName').value
+if(!name)return
+buildings.push(name)
+render()
+}
+
+function addUnit(){
+let building=document.getElementById('unitBuilding').value
+let name=document.getElementById('unitName').value
+if(!building||!name)return
+units.push({building,name})
+render()
+}
+
+function addTenant(){
+let name=document.getElementById('tenantName').value
+let phone=document.getElementById('tenantPhone').value
+let unit=document.getElementById('tenantUnit').value
+let rent=document.getElementById('tenantRent').value
+if(!name||!rent)return
+
+tenants.push({name,phone,unit,rent})
+render()
+}
+
+function addPayment(){
+let idx=document.getElementById('tenantSelect').value
+let amount=document.getElementById('paymentAmount').value
+if(amount==='')return
+
+let tenant=tenants[idx]
+payments.push({name:tenant.name,amount})
+render()
+}
+
+function addExpense(){
+let desc=document.getElementById('expenseDesc').value
+let amount=document.getElementById('expenseAmount').value
+if(!desc||!amount)return
+
+expenses.push({desc,amount})
+render()
+}
+
+function generateReceipt(){
+let idx=document.getElementById('tenantSelect').value
+let tenant=tenants[idx]
+let amount=document.getElementById('paymentAmount').value
+if(!tenant||!amount)return
+
+const { jsPDF } = window.jspdf
+const doc = new jsPDF()
+
+doc.text('Reçu de paiement de loyer',20,20)
+doc.text('Locataire: '+tenant.name,20,40)
+doc.text('Logement: '+tenant.unit,20,50)
+doc.text('Montant: '+amount+'$',20,60)
+doc.text('Date: '+new Date().toLocaleDateString(),20,70)
+
+doc.save('recu-loyer.pdf')
 }
 
 render()
@@ -159,32 +246,3 @@ render()
 
 </body>
 </html>
-```
-
-## Déployer sur GitHub
-
-1. Aller sur **github.com**
-2. Cliquer **New repository**
-3. Nom : `gestion-immeubles`
-4. Cliquer **Add file → Upload files**
-5. Envoyer **index.html**
-6. Activer **Settings → Pages → Deploy from branch → main**
-
-Votre application sera disponible comme site web.
-
-Exemple :
-
-```
-https://votrenom.github.io/gestion-immeubles
-```
-
-Elle fonctionnera aussi comme **application mobile** si vous l'ajoutez à l'écran d'accueil.
-
----
-
-Améliorations possibles :
-- loyers en retard
-- photos de réparations
-- gestion de plusieurs immeubles
-- export pour impôts Québec
-- graphiques revenus
